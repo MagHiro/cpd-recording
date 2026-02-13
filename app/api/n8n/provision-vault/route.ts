@@ -16,6 +16,29 @@ function formatZodError(error: ZodError): Array<{ path: string; message: string 
   }));
 }
 
+function normalizeIncomingPayload(input: unknown): unknown {
+  if (!input || typeof input !== "object") {
+    return input;
+  }
+
+  const obj = input as Record<string, unknown>;
+  const body = obj.body;
+
+  if (body && typeof body === "object") {
+    return body;
+  }
+
+  if (typeof body === "string") {
+    try {
+      return JSON.parse(body);
+    } catch {
+      return input;
+    }
+  }
+
+  return input;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -38,6 +61,7 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
+    json = normalizeIncomingPayload(json);
 
     const catalogAssignParsed = n8nCatalogAssignSchema.safeParse(json);
     if (catalogAssignParsed.success) {

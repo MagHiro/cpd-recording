@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# runtime data
+/data/
+
+# old prisma files
+/prisma/
+/prisma.config.ts
+/app/generated/prisma

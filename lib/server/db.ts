@@ -320,7 +320,7 @@ export async function ingestPackage(payload: IngestPayload) {
     const existing = await db.query<{ id: string }>(
       `SELECT id FROM vault_assets
        WHERE package_id = $1
-         AND (google_drive_file_id = $2 OR ($3 IS NOT NULL AND external_asset_id = $4))
+         AND (google_drive_file_id = $2 OR ($3::text IS NOT NULL AND external_asset_id = $4::text))
        LIMIT 1`,
       [packageId, asset.googleDriveFileId, asset.externalAssetId ?? null, asset.externalAssetId ?? null],
     );
@@ -804,7 +804,7 @@ export async function syncCatalogEntryToExistingPackages(videoId: string): Promi
       const existing = await db.query<{ id: string }>(
         `SELECT id FROM vault_assets
          WHERE package_id = $1
-         AND (google_drive_file_id = $2 OR ($3 IS NOT NULL AND external_asset_id = $4))
+         AND (google_drive_file_id = $2 OR ($3::text IS NOT NULL AND external_asset_id = $4::text))
          LIMIT 1`,
         [pkg.id, asset.googleDriveFileId, asset.externalAssetId ?? null, asset.externalAssetId ?? null],
       );

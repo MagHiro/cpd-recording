@@ -1,29 +1,7 @@
 import type { NextConfig } from "next";
-import WebpackObfuscator from "webpack-obfuscator";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  webpack(config, { dev, isServer }) {
-    if (!dev && !isServer) {
-      config.plugins.push(
-        new WebpackObfuscator(
-          {
-            compact: true,
-            controlFlowFlattening: true,
-            deadCodeInjection: true,
-            simplify: true,
-            stringArray: true,
-            stringArrayEncoding: ["base64"],
-            selfDefending: true,
-            disableConsoleOutput: true,
-          },
-          ["framework-*.js", "main-*.js", "polyfills-*.js"],
-        ),
-      );
-    }
-
-    return config;
-  },
   async headers() {
     return [
       {

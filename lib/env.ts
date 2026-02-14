@@ -1,8 +1,12 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .preprocess((value) => (value === "" ? undefined : value), z.enum(["development", "test", "production"]))
+    .default("development"),
+  DATABASE_URL: z.string().optional().default(""),
   POSTGRES_URL: z.string().optional().default(""),
+  POSTGRES_URL_NON_POOLING: z.string().optional().default(""),
   APP_URL: z.string().url().default("http://localhost:3000"),
   SESSION_COOKIE_NAME: z.string().default("rv_session"),
   ADMIN_SESSION_COOKIE_NAME: z.string().default("rv_admin_session"),

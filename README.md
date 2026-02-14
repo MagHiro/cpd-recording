@@ -15,7 +15,7 @@ Secure video stream platform for paid recordings and materials.
 
 - Next.js 16 (App Router)
 - TypeScript
-- Vercel Postgres (`@vercel/postgres`)
+- PostgreSQL (`pg`)
 - Zod validation
 - Google Drive OAuth 2.0 (refresh token)
 
@@ -40,7 +40,9 @@ Required admin variables:
 - `ADMIN_SESSION_TTL_HOURS`
 
 Required database variables:
-- `POSTGRES_URL` (from Vercel Postgres/Neon integration)
+- `DATABASE_URL` (recommended for local Postgres)
+- `POSTGRES_URL` (works for pooled or direct provider URLs)
+- `POSTGRES_URL_NON_POOLING` (optional direct fallback)
 
 Required Google Drive variables:
 - `GOOGLE_OAUTH_CLIENT_ID`

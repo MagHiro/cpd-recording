@@ -25,29 +25,33 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  const tokenHash = hashWithSecret(rawToken);
-  const session = await getSessionByTokenHash(tokenHash);
+  try {
+    const tokenHash = hashWithSecret(rawToken);
+    const session = await getSessionByTokenHash(tokenHash);
 
-  if (!session) {
+    if (!session) {
+      return null;
+    }
+
+    if (Number(session.expires_at) <= Date.now()) {
+      await deleteSessionByTokenHash(tokenHash);
+      return null;
+    }
+
+    await touchSession(session.id);
+
+    const vault = await getVaultByUserId(session.user_id);
+    if (!vault) {
+      return null;
+    }
+
+    return {
+      userId: vault.userId,
+      email: vault.email,
+    };
+  } catch {
     return null;
   }
-
-  if (Number(session.expires_at) <= Date.now()) {
-    await deleteSessionByTokenHash(tokenHash);
-    return null;
-  }
-
-  await touchSession(session.id);
-
-  const vault = await getVaultByUserId(session.user_id);
-  if (!vault) {
-    return null;
-  }
-
-  return {
-    userId: vault.userId,
-    email: vault.email,
-  };
 }
 
 export async function requireSessionUser(): Promise<SessionUser> {

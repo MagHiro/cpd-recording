@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID } from "crypto";
-import { db } from "@vercel/postgres";
+import { Pool } from "pg";
 
 export type AssetType = "VIDEO" | "PDF" | "ZIP";
 
@@ -74,12 +74,18 @@ interface AdminSessionRow {
   last_seen_at: string | number;
 }
 
-let initPromise: Promise<void> | null = null;
+const connectionString =
+  process.env.DATABASE_URL?.trim() || process.env.POSTGRES_URL?.trim() || process.env.POSTGRES_URL_NON_POOLING?.trim();
 
-async function initDb(): Promise<void> {
-  if (!initPromise) {
-    initPromise = db
-      .query(`
+if (!connectionString) {
+  throw new Error("Missing database connection string. Set DATABASE_URL or POSTGRES_URL (or POSTGRES_URL_NON_POOLING).");
+}
+
+const db = new Pool({
+  connectionString,
+});
+
+const INIT_SQL = `
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
@@ -169,8 +175,25 @@ async function initDb(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_login_codes_user_id_expires_at ON login_codes(user_id, expires_at);
       CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires_at ON admin_sessions(expires_at);
       CREATE INDEX IF NOT EXISTS idx_video_catalog_video_id ON video_catalog(video_id);
-    `)
-      .then(() => undefined);
+    `;
+
+let initPromise: Promise<void> | null = null;
+
+function normalizeError(error: unknown): Error {
+  if (error instanceof Error) return error;
+  const details = typeof error === "object" && error !== null ? JSON.stringify(error) : String(error);
+  return new Error(`Database error: ${details}`);
+}
+
+async function initDb(): Promise<void> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      await db.query(INIT_SQL);
+    })().catch((error: unknown) => {
+      initPromise = null;
+      throw normalizeError(error);
+    });
+    initPromise = initPromise.then(() => undefined);
   }
   await initPromise;
 }

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
     const existing = await findUserByEmail(parsed.email);
     if (!existing) {
-      return NextResponse.json({ error: "Invalid email or code." }, { status: 401 });
+      return NextResponse.json({ error: "You are not registered." }, { status: 404 });
     }
 
     const consumed = await consumeLoginCode(existing.id, hashWithSecret(`${parsed.email}:${parsed.code}`));

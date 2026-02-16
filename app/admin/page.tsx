@@ -1,31 +1,37 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
-  Activity,
   Cable,
   CheckCircle2,
   LayoutList,
   LogOut,
-  Settings,
   ShieldCheck,
   Video,
 } from "lucide-react";
 
 import { AdminEntryManager } from "@/components/admin/admin-entry-manager";
+import { AdminManualRegisterForm } from "@/components/admin/admin-manual-register-form";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { getAdminUser } from "@/lib/server/admin-auth";
 import { getDriveConnectionInfo } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ tab?: string }>;
+}) {
   const admin = await getAdminUser();
   if (!admin) {
     redirect("/admin/login");
   }
+  const params = (await searchParams) ?? {};
+  const activeTab = params.tab === "provisioning" ? "provisioning" : "catalog";
   const drive = await getDriveConnectionInfo();
 
   return (
-    <main className="shell-bg min-h-screen bg-[linear-gradient(160deg,#dcecff_0%,#cfe4ff_35%,#eff5ff_100%)] px-4 py-8 text-[#00194c] md:px-8">
+    <main className="shell-bg h-screen overflow-y-scroll bg-[linear-gradient(160deg,#dcecff_0%,#cfe4ff_35%,#eff5ff_100%)] px-4 py-8 text-[#00194c] md:px-8">
       <div className="shell-content mx-auto max-w-325 overflow-hidden rounded-[26px] border border-white/70 bg-[#f2f7ff]/95 shadow-[0_30px_90px_rgba(8,28,76,0.2)]">
         <div className="flex items-center gap-2 border-b border-[#d9e5fb] px-6 py-3">
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -46,22 +52,20 @@ export default async function AdminPage() {
             </div>
 
             <nav className="mt-10 space-y-2 text-sm">
-              <div className="flex items-center gap-2 rounded-xl bg-[#1c64f2] px-4 py-3 font-semibold text-white">
+              <Link
+                href="/admin?tab=catalog"
+                className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold ${activeTab === "catalog" ? "bg-[#1c64f2] text-white" : "text-[#4a5f93]"}`}
+              >
                 <Video size={16} />
                 Catalog
-              </div>
-              <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-[#4a5f93]">
+              </Link>
+              <Link
+                href="/admin?tab=provisioning"
+                className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold ${activeTab === "provisioning" ? "bg-[#1c64f2] text-white" : "text-[#4a5f93]"}`}
+              >
                 <LayoutList size={16} />
                 Provisioning
-              </div>
-              <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-[#4a5f93]">
-                <Activity size={16} />
-                Audit
-              </div>
-              <div className="flex items-center gap-2 rounded-xl px-4 py-3 text-[#4a5f93]">
-                <Settings size={16} />
-                Settings
-              </div>
+              </Link>
             </nav>
 
             <div className="mt-12 rounded-2xl bg-white p-4 shadow-sm">
@@ -88,7 +92,9 @@ export default async function AdminPage() {
                 <p className="text-xs uppercase tracking-[0.18em] text-[#6a7dab]">
                   Dashboard
                 </p>
-                <h1 className="text-2xl font-bold">Video Catalog Management</h1>
+                <h1 className="text-2xl font-bold">
+                  {activeTab === "catalog" ? "Video Catalog Management" : "Manual Registration"}
+                </h1>
               </div>
               <div className="flex items-center gap-2 rounded-full border border-[#d8e1f5] bg-white px-4 py-2 text-sm text-[#4a5f93]">
                 <ShieldCheck size={14} />
@@ -96,41 +102,46 @@ export default async function AdminPage() {
               </div>
             </header>
 
-            <section className="mb-5 rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-[#6a7dab]">
-                    Google Drive Connection
-                  </p>
-                  <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[#18346f]">
-                    {drive.hasStoredRefreshToken ? (
-                      <>
-                        <CheckCircle2 size={16} className="text-emerald-600" />
-                        Connected
-                      </>
-                    ) : (
-                      <>
-                        <Cable size={16} className="text-amber-600" />
-                        Not connected
-                      </>
-                    )}
+            {activeTab === "catalog" ? (
+              <>
+                <section className="mb-5 rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-[#6a7dab]">
+                        Google Drive Connection
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[#18346f]">
+                        {drive.hasStoredRefreshToken ? (
+                          <>
+                            <CheckCircle2 size={16} className="text-emerald-600" />
+                            Connected
+                          </>
+                        ) : (
+                          <>
+                            <Cable size={16} className="text-amber-600" />
+                            Not connected
+                          </>
+                        )}
+                      </div>
+                      {drive.connectedEmail ? (
+                        <p className="mt-1 text-xs text-[#4a5f93]">
+                          Connected account: {drive.connectedEmail}
+                        </p>
+                      ) : null}
+                    </div>
+                    <a
+                      href="/api/admin/google/connect/start"
+                      className="btn-primary px-4 py-2 text-xs md:text-sm"
+                    >
+                      Connect Drive
+                    </a>
                   </div>
-                  {drive.connectedEmail ? (
-                    <p className="mt-1 text-xs text-[#4a5f93]">
-                      Connected account: {drive.connectedEmail}
-                    </p>
-                  ) : null}
-                </div>
-                <a
-                  href="/api/admin/google/connect/start"
-                  className="btn-primary px-4 py-2 text-xs md:text-sm"
-                >
-                  Connect Drive
-                </a>
-              </div>
-            </section>
-
-            <AdminEntryManager />
+                </section>
+                <AdminEntryManager />
+              </>
+            ) : (
+              <AdminManualRegisterForm />
+            )}
           </section>
         </div>
       </div>

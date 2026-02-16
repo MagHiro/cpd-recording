@@ -17,6 +17,10 @@ export const adminLoginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const adminManualRegisterSchema = z.object({
+  email: emailSchema,
+});
+
 const driveFileIdSchema = z
   .string()
   .min(1)

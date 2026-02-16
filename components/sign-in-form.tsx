@@ -61,9 +61,12 @@ export function SignInForm() {
 
   return (
     <div className="card max-w-md w-full">
-      <h1 className="text-3xl font-semibold tracking-tight text-[#00194c]">Access Your Vault</h1>
+      <h1 className="text-3xl font-semibold tracking-tight text-[#00194c]">
+        Access Your CPD Portal
+      </h1>
       <p className="mt-3 text-sm text-[#4a5f93]">
-        Sign in with the same booking email used at checkout. Access is limited to your purchased recordings.
+        Sign in using the email address you used to register for your CPD
+        session.
       </p>
 
       {step === "email" ? (
@@ -81,7 +84,11 @@ export function SignInForm() {
             placeholder="you@example.com"
             autoComplete="email"
           />
-          <button className="btn-primary w-full" disabled={loading} type="submit">
+          <button
+            className="btn-primary w-full"
+            disabled={loading}
+            type="submit"
+          >
             {loading ? "Sending code..." : "Send login code"}
           </button>
         </form>
@@ -102,7 +109,11 @@ export function SignInForm() {
             autoComplete="one-time-code"
             maxLength={6}
           />
-          <button className="btn-primary w-full" disabled={loading} type="submit">
+          <button
+            className="btn-primary w-full"
+            disabled={loading}
+            type="submit"
+          >
             {loading ? "Verifying..." : "Sign in"}
           </button>
           <button

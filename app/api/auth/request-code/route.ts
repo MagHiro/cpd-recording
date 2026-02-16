@@ -24,16 +24,18 @@ export async function POST(req: NextRequest) {
 
     const existing = await findUserByEmail(parsed.email);
 
-    if (existing) {
-      const code = createNumericCode(6);
-      const expiresAt = Date.now() + env.LOGIN_CODE_TTL_MINUTES * 60 * 1000;
-      await createLoginCode(existing.id, hashWithSecret(`${parsed.email}:${code}`), expiresAt);
-      await sendLoginCodeEmail(parsed.email, code);
+    if (!existing) {
+      return NextResponse.json({ error: "You are not registered." }, { status: 404 });
     }
+
+    const code = createNumericCode(6);
+    const expiresAt = Date.now() + env.LOGIN_CODE_TTL_MINUTES * 60 * 1000;
+    await createLoginCode(existing.id, hashWithSecret(`${parsed.email}:${code}`), expiresAt);
+    await sendLoginCodeEmail(parsed.email, code);
 
     return NextResponse.json({
       success: true,
-      message: "If your account exists, a login code has been sent.",
+      message: "A login code has been sent.",
     });
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });

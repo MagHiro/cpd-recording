@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extractGoogleDriveFileId } from "@/lib/drive-file-id";
 
 export const emailSchema = z.string().email().transform((v) => v.trim().toLowerCase());
 
@@ -16,11 +17,19 @@ export const adminLoginSchema = z.object({
   password: z.string().min(1),
 });
 
+const driveFileIdSchema = z
+  .string()
+  .min(1)
+  .transform((value) => extractGoogleDriveFileId(value) ?? value.trim())
+  .refine((value) => /^[a-zA-Z0-9_-]{10,}$/.test(value), {
+    message: "Provide a valid Google Drive file ID or Google Drive file link.",
+  });
+
 const inboundAssetSchema = z.object({
   assetId: z.string().min(1).optional(),
   title: z.string().min(1),
   kind: z.enum(["VIDEO", "PDF", "ZIP"]),
-  googleDriveFileId: z.string().min(10),
+  googleDriveFileId: driveFileIdSchema,
   mimeType: z.string().min(2).optional(),
   sizeBytes: z.number().int().positive().optional(),
 });
@@ -70,7 +79,7 @@ export const adminAssetSchema = z.object({
   assetId: z.string().min(1).optional(),
   title: z.string().min(1),
   kind: z.enum(["VIDEO", "PDF", "ZIP"]),
-  googleDriveFileId: z.string().min(10),
+  googleDriveFileId: driveFileIdSchema,
   mimeType: z.string().min(2).optional(),
   sizeBytes: z.coerce.number().int().positive().optional(),
 });

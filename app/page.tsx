@@ -21,20 +21,34 @@ export default async function RootSignInPage() {
         </div>
         <div className="grid gap-10 p-8 md:grid-cols-[1fr_420px]">
           <div className="max-w-xl text-[#00194c]">
-            <p className="text-xs uppercase tracking-[0.25em] text-[#b66c00]">Private Access</p>
-            <h1 className="mt-4 text-4xl font-bold leading-tight">Your purchased recordings, one secure vault.</h1>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#b66c00]">
+              Private Access
+            </p>
+            <h1 className="mt-4 text-4xl font-bold leading-tight">
+              ANZ Migrate CPD
+            </h1>
             <p className="mt-6 text-base text-[#4a5f93]">
-              Login codes are sent only to your booking email. If your purchase has been provisioned, your package
-              appears instantly after sign-in.
+              Access is available to registered participants only. A secure
+              login code will be sent to your registration email. Your CPD
+              recordings and materials will appear automatically once access is
+              activated.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <div className="card">
-                <p className="text-xs text-[#6a7dab]">Protected streaming</p>
-                <p className="mt-1 text-sm font-semibold">No direct Drive links exposed</p>
+                <p className="text-xs text-[#6a7dab]">
+                  Secure streaming access
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  Recordings available only within this portal
+                </p>
               </div>
               <div className="card">
-                <p className="text-xs text-[#6a7dab]">Email-bound access</p>
-                <p className="mt-1 text-sm font-semibold">Only booked account can open</p>
+                <p className="text-xs text-[#6a7dab]">
+                  Registration-based access
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  Available only to registered CPD participants
+                </p>
               </div>
             </div>
           </div>

@@ -488,6 +488,56 @@ export async function getVaultByEmail(email: string): Promise<VaultView | null> 
   });
 }
 
+export async function listRegisteredUsers(limit = 200): Promise<
+  Array<{
+    userId: string;
+    email: string;
+    vaultSlug: string;
+    createdAt: string;
+    packageCount: number;
+    videoCount: number;
+    lastProvisionedAt: string | null;
+  }>
+> {
+  await initDb();
+  const rows = await db.query<{
+    userid: string;
+    email: string;
+    vaultslug: string;
+    createdat: string;
+    packagecount: string | number;
+    videocount: string | number;
+    lastprovisionedat: string | null;
+  }>(
+    `SELECT
+       u.id as userId,
+       u.email as email,
+       v.slug as vaultSlug,
+       u.created_at as createdAt,
+       COUNT(DISTINCT p.id) as packageCount,
+       COUNT(DISTINCT CASE WHEN a.type = 'VIDEO' THEN a.id END) as videoCount,
+       MAX(p.created_at) as lastProvisionedAt
+     FROM users u
+     JOIN vaults v ON v.user_id = u.id
+     LEFT JOIN vault_packages p ON p.vault_id = v.id
+     LEFT JOIN vault_assets a ON a.package_id = p.id
+     GROUP BY u.id, u.email, v.slug, u.created_at
+     ORDER BY u.created_at DESC
+     LIMIT $1`,
+    [limit],
+  );
+
+  return rows.rows.map((row) => ({
+    userId: row.userid,
+    email: row.email,
+    vaultSlug: row.vaultslug,
+    createdAt: row.createdat,
+    packageCount: Number(row.packagecount ?? 0),
+    videoCount: Number(row.videocount ?? 0),
+    lastProvisionedAt: row.lastprovisionedat,
+  }));
+}
+
 export async function createLoginCode(userId: string, codeHash: string, expiresAtMs: number): Promise<void> {
   await initDb();
   const now = nowMs();
@@ -742,15 +792,33 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
   const requested = Array.from(new Set(params.videoIds.map((id) => id.trim()).filter(Boolean)));
   const entries = await findCatalogVideosByIds(requested);
   const found = new Set(entries.map((e) => e.videoId));
-  const missingVideoIds = requested.filter((id) => !found.has(id));
-  if (missingVideoIds.length > 0) return { success: false as const, missingVideoIds };
+  const pendingVideoIds = requested.filter((id) => !found.has(id));
 
   const owner = await upsertUserAndVault(params.email);
   const entryMap = new Map(entries.map((entry) => [entry.videoId, entry]));
   const packages = [];
   for (const videoId of requested) {
     const entry = entryMap.get(videoId);
-    if (!entry) continue;
+    if (!entry) {
+      const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${videoId}`;
+      const result = await ingestPackage({
+        email: owner.email,
+        requestId,
+        packageTitle: `${videoId} - Video Pending`,
+        classCode: videoId,
+        assets: [],
+      });
+      packages.push({
+        videoId,
+        packageId: result.packageId,
+        totalAssets: result.totalAssets,
+        classCode: videoId,
+        classTitle: "Video Pending",
+        unavailable: true as const,
+      });
+      continue;
+    }
+
     const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${entry.videoId}`;
     const result = await ingestPackage({
       email: owner.email,
@@ -784,10 +852,11 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
       totalAssets: result.totalAssets,
       classCode: entry.classCode,
       classTitle: entry.classTitle,
+      unavailable: false as const,
     });
   }
 
-  return { success: true as const, owner, packages };
+  return { success: true as const, owner, packages, pendingVideoIds };
 }
 
 export async function syncCatalogEntryToExistingPackages(videoId: string): Promise<{ updatedPackages: number; upsertedAssets: number }> {

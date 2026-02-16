@@ -77,13 +77,6 @@ export async function POST(req: NextRequest) {
         videoIds,
       });
 
-      if (!result.success) {
-        return NextResponse.json(
-          { error: "Some videoIds are not found in catalog.", missingVideoIds: result.missingVideoIds },
-          { status: 400 },
-        );
-      }
-
       return NextResponse.json({
         success: true,
         email: catalogAssignParsed.data.email,
@@ -91,7 +84,11 @@ export async function POST(req: NextRequest) {
         vaultSlug: result.owner.slug,
         totalPackages: result.packages.length,
         packages: result.packages,
-        message: "Catalog videos assigned successfully.",
+        pendingVideoIds: result.pendingVideoIds,
+        message:
+          result.pendingVideoIds.length > 0
+            ? "Classes assigned. Some videos are pending and will appear when catalog entries are ready."
+            : "Catalog videos assigned successfully.",
       });
     }
 

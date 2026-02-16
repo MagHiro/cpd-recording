@@ -7,6 +7,7 @@ export default async function VaultRecordingsPage() {
     (count, pkg) => count + pkg.assets.filter((asset) => asset.type === "VIDEO").length,
     0,
   );
+  const hasAnyClass = vault.packages.length > 0;
 
   return (
     <>
@@ -20,13 +21,10 @@ export default async function VaultRecordingsPage() {
         </div>
       </header>
 
-      {totalVideos > 0 ? (
+      {hasAnyClass ? (
         <div className="space-y-4">
           {vault.packages.map((pkg) => {
             const videos = pkg.assets.filter((asset) => asset.type === "VIDEO");
-            if (videos.length === 0) {
-              return null;
-            }
 
             return (
               <section className="card" key={pkg.id}>
@@ -40,16 +38,22 @@ export default async function VaultRecordingsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {videos.map((asset) => (
-                    <VideoPlayer
-                      key={asset.id}
-                      assetId={asset.id}
-                      title={asset.title}
-                      subtitle={`${pkg.classCode ?? "CLASS"} • ${pkg.classDate ?? pkg.createdAt.slice(0, 10)}`}
-                    />
-                  ))}
-                </div>
+                {videos.length > 0 ? (
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {videos.map((asset) => (
+                      <VideoPlayer
+                        key={asset.id}
+                        assetId={asset.id}
+                        title={asset.title}
+                        subtitle={`${pkg.classCode ?? "CLASS"} • ${pkg.classDate ?? pkg.createdAt.slice(0, 10)}`}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-[#f5d99b] bg-[#fff7e8] px-4 py-3 text-sm text-[#7a4b00]">
+                    Video is currently unavailable.
+                  </div>
+                )}
               </section>
             );
           })}

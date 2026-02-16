@@ -13,7 +13,7 @@ import { AdminEntryManager } from "@/components/admin/admin-entry-manager";
 import { AdminManualRegisterForm } from "@/components/admin/admin-manual-register-form";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { getAdminUser } from "@/lib/server/admin-auth";
-import { getDriveConnectionInfo } from "@/lib/server/db";
+import { getDriveConnectionInfo, listRegisteredUsers } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +29,10 @@ export default async function AdminPage({
   const params = (await searchParams) ?? {};
   const activeTab = params.tab === "provisioning" ? "provisioning" : "catalog";
   const drive = await getDriveConnectionInfo();
+  const initialUsers = activeTab === "provisioning" ? await listRegisteredUsers(500) : [];
 
   return (
-    <main className="shell-bg h-screen overflow-y-scroll bg-[linear-gradient(160deg,#dcecff_0%,#cfe4ff_35%,#eff5ff_100%)] px-4 py-8 text-[#00194c] md:px-8">
+    <main className="shell-bg min-h-screen bg-[linear-gradient(160deg,#dcecff_0%,#cfe4ff_35%,#eff5ff_100%)] px-4 py-8 text-[#00194c] md:px-8">
       <div className="shell-content mx-auto max-w-325 overflow-hidden rounded-[26px] border border-white/70 bg-[#f2f7ff]/95 shadow-[0_30px_90px_rgba(8,28,76,0.2)]">
         <div className="flex items-center gap-2 border-b border-[#d9e5fb] px-6 py-3">
           <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -77,7 +78,7 @@ export default async function AdminPage({
               </p>
             </div>
 
-            <div className="mt-8">
+            <div className="mt-8 flex flex-col">
               <div className="mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-[#6a7dab]">
                 <LogOut size={13} />
                 Session
@@ -93,7 +94,9 @@ export default async function AdminPage({
                   Dashboard
                 </p>
                 <h1 className="text-2xl font-bold">
-                  {activeTab === "catalog" ? "Video Catalog Management" : "Manual Registration"}
+                  {activeTab === "catalog"
+                    ? "Video Catalog Management"
+                    : "Manual Registration"}
                 </h1>
               </div>
               <div className="flex items-center gap-2 rounded-full border border-[#d8e1f5] bg-white px-4 py-2 text-sm text-[#4a5f93]">
@@ -113,7 +116,10 @@ export default async function AdminPage({
                       <div className="mt-1 flex items-center gap-2 text-sm font-semibold text-[#18346f]">
                         {drive.hasStoredRefreshToken ? (
                           <>
-                            <CheckCircle2 size={16} className="text-emerald-600" />
+                            <CheckCircle2
+                              size={16}
+                              className="text-emerald-600"
+                            />
                             Connected
                           </>
                         ) : (
@@ -140,7 +146,7 @@ export default async function AdminPage({
                 <AdminEntryManager />
               </>
             ) : (
-              <AdminManualRegisterForm />
+              <AdminManualRegisterForm initialUsers={initialUsers} />
             )}
           </section>
         </div>

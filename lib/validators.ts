@@ -19,6 +19,29 @@ export const adminLoginSchema = z.object({
 
 export const adminManualRegisterSchema = z.object({
   email: emailSchema,
+  requestId: z.string().min(1).optional(),
+  classCodes: z
+    .union([z.array(z.string()), z.string()])
+    .optional()
+    .transform((value) =>
+      Array.isArray(value)
+        ? value.map((v) => v.trim()).filter(Boolean)
+        : (value ?? "")
+            .split(/[\n,]/g)
+            .map((v) => v.trim())
+            .filter(Boolean),
+    ),
+  videoIds: z
+    .union([z.array(z.string()), z.string()])
+    .optional()
+    .transform((value) =>
+      Array.isArray(value)
+        ? value.map((v) => v.trim()).filter(Boolean)
+        : (value ?? "")
+            .split(/[\n,]/g)
+            .map((v) => v.trim())
+            .filter(Boolean),
+    ),
 });
 
 const driveFileIdSchema = z

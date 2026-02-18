@@ -30,8 +30,12 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
   const [videoIds, setVideoIds] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [importingCsv, setImportingCsv] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const [users, setUsers] = useState<RegisteredUser[]>(initialUsers);
 
   async function loadUsers() {
@@ -102,6 +106,51 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
     }
   }
 
+  async function importRegistrantsCsv(event: FormEvent) {
+    event.preventDefault();
+    if (!importFile) {
+      setImportError("Select a CSV file first.");
+      return;
+    }
+
+    setImportingCsv(true);
+    setImportMessage(null);
+    setImportError(null);
+
+    try {
+      const sourceCsv = await importFile.text();
+      const response = await fetch("/api/admin/users/import-registrants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: sourceCsv }),
+      });
+
+      if (!response.ok) {
+        const data = (await response.json()) as { error?: string };
+        throw new Error(data.error ?? "Failed to import CSV.");
+      }
+
+      const data = (await response.json()) as {
+        message?: string;
+        totalRows?: number;
+        validRows?: number;
+        uniqueEmails?: number;
+        upsertedUsers?: number;
+        provisionedClassCodes?: number;
+        skippedInvalid?: number;
+        failedUsers?: number;
+      };
+      setImportMessage(
+        `${data.message ?? "CSV imported."} Rows: ${data.totalRows ?? 0}, valid: ${data.validRows ?? 0}, users: ${data.upsertedUsers ?? 0}, class codes: ${data.provisionedClassCodes ?? 0}, skipped: ${data.skippedInvalid ?? 0}, failed users: ${data.failedUsers ?? 0}.`,
+      );
+      await loadUsers();
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : "Failed to import CSV.");
+    } finally {
+      setImportingCsv(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">
@@ -155,6 +204,44 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
           <p className="mt-3 text-sm text-emerald-600">{message}</p>
         ) : null}
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      </section>
+
+      <section className="rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">
+        <div>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#6a7dab]">
+            CSV Import to Registrants
+          </p>
+          <p className="mt-1 text-sm text-[#4a5f93]">
+            Upload the registrants CSV and bulk import into the registered user
+            list. Each row uses <code>class_code</code> for provisioning.
+          </p>
+        </div>
+
+        <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={importRegistrantsCsv}>
+          <input
+            accept=".csv,text/csv"
+            className="field max-w-xl"
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              setImportFile(file);
+              setImportMessage(null);
+              setImportError(null);
+            }}
+            type="file"
+          />
+          <button
+            className="btn-primary w-fit px-4 py-2 text-sm"
+            disabled={importingCsv}
+            type="submit"
+          >
+            {importingCsv ? "Importing..." : "Import CSV"}
+          </button>
+        </form>
+
+        {importMessage ? (
+          <p className="mt-3 text-sm text-emerald-600">{importMessage}</p>
+        ) : null}
+        {importError ? <p className="mt-3 text-sm text-red-600">{importError}</p> : null}
       </section>
 
       <section className="rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">

@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpenCheck, FileStack, LayoutDashboard, LogOut, Settings, Video } from "lucide-react";
+import {
+  BookOpenCheck,
+  FileStack,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Video,
+} from "lucide-react";
 
 import { LogoutButton } from "@/components/logout-button";
 
@@ -27,7 +34,7 @@ export function VaultSidebar({ email }: Props) {
           <Video size={18} />
         </div>
         <div>
-          <p className="text-xl font-bold leading-none">Vault.</p>
+          <p className="text-xl font-bold leading-none">ANZ Migrate</p>
           <p className="text-xs text-[#6a7dab]">Recording Access</p>
         </div>
       </div>
@@ -37,27 +44,43 @@ export function VaultSidebar({ email }: Props) {
           <LayoutDashboard size={16} />
           Overview
         </Link>
-        <Link href="/vault/recordings" className={navClass(pathname.startsWith("/vault/recordings"))}>
+        <Link
+          href="/vault/recordings"
+          className={navClass(pathname.startsWith("/vault/recordings"))}
+        >
           <Video size={16} />
           Recordings
         </Link>
-        <Link href="/vault/materials" className={navClass(pathname.startsWith("/vault/materials"))}>
+        <Link
+          href="/vault/materials"
+          className={navClass(pathname.startsWith("/vault/materials"))}
+        >
           <FileStack size={16} />
           Materials
         </Link>
-        <Link href="/vault/classes" className={navClass(pathname.startsWith("/vault/classes"))}>
+        <Link
+          href="/vault/classes"
+          className={navClass(pathname.startsWith("/vault/classes"))}
+        >
           <BookOpenCheck size={16} />
           Classes
         </Link>
-        <Link href="/vault/settings" className={navClass(pathname.startsWith("/vault/settings"))}>
+        <Link
+          href="/vault/settings"
+          className={navClass(pathname.startsWith("/vault/settings"))}
+        >
           <Settings size={16} />
           Settings
         </Link>
       </nav>
 
       <div className="mt-12 rounded-2xl bg-white p-4 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.14em] text-[#b66c00]">Signed in as</p>
-        <p className="mt-2 truncate text-sm font-semibold text-[#18346f]">{email}</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-[#b66c00]">
+          Signed in as
+        </p>
+        <p className="mt-2 truncate text-sm font-semibold text-[#18346f]">
+          {email}
+        </p>
       </div>
 
       <div className="mt-8">

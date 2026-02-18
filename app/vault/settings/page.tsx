@@ -8,7 +8,9 @@ export default async function VaultSettingsPage() {
   return (
     <>
       <header className="mb-5">
-        <p className="text-xs uppercase tracking-[0.18em] text-[#6a7dab]">Settings</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#6a7dab]">
+          Settings
+        </p>
         <h1 className="text-2xl font-bold">Account Settings</h1>
       </header>
 
@@ -27,7 +29,8 @@ export default async function VaultSettingsPage() {
             <p className="text-sm font-semibold">Access Policy</p>
           </div>
           <p className="mt-2 text-sm text-[#4a5f93]">
-            Only assets provisioned for this email can be streamed or downloaded through this vault.
+            Only assets provisioned for this email can be streamed or downloaded
+            through this recording portal.
           </p>
         </div>
       </section>

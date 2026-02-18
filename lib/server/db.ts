@@ -351,11 +351,12 @@ export async function ingestPackage(payload: IngestPayload) {
     if (existing.rows[0]) {
       await db.query(
         `UPDATE vault_assets
-         SET title = $1, type = $2, mime_type = $3, size_bytes = $4, external_asset_id = $5
-         WHERE id = $6`,
+         SET title = $1, type = $2, google_drive_file_id = $3, mime_type = $4, size_bytes = $5, external_asset_id = $6
+         WHERE id = $7`,
         [
           asset.title,
           asset.type,
+          asset.googleDriveFileId,
           asset.mimeType ?? null,
           asset.sizeBytes ?? null,
           asset.externalAssetId ?? null,
@@ -903,11 +904,12 @@ export async function syncCatalogEntryToExistingPackages(videoId: string): Promi
       if (existing.rows[0]) {
         await db.query(
           `UPDATE vault_assets
-           SET title = $1, type = $2, mime_type = $3, size_bytes = $4, external_asset_id = $5
-           WHERE id = $6`,
+           SET title = $1, type = $2, google_drive_file_id = $3, mime_type = $4, size_bytes = $5, external_asset_id = $6
+           WHERE id = $7`,
           [
             asset.title,
             asset.type,
+            asset.googleDriveFileId,
             asset.mimeType ?? null,
             asset.sizeBytes ?? null,
             asset.externalAssetId ?? null,

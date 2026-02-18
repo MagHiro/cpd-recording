@@ -7,9 +7,9 @@ export default async function VaultOverviewPage() {
   const videos = allAssets.filter((asset) => asset.type === "VIDEO");
   const materials = allAssets.filter((asset) => asset.type !== "VIDEO");
   const latestPackage = vault.packages[0];
-  const featuredVideos = latestPackage
-    ? latestPackage.assets.filter((asset) => asset.type === "VIDEO").slice(0, 2)
-    : [];
+  const featuredVideos = vault.packages
+    .flatMap((pkg) => pkg.assets.filter((asset) => asset.type === "VIDEO"))
+    .slice(0, 2);
 
   return (
     <>

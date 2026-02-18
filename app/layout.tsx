@@ -15,8 +15,8 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Recording Vault",
-  description: "Secure streaming vault for purchased recordings and materials.",
+  title: "ANZ Migrate CPD Portal",
+  description: "Access your ANZ Migrate CPD recordings and materials securely.",
   robots: {
     index: false,
     follow: false,
@@ -39,7 +39,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${dmSans.variable} ${spaceMono.variable} antialiased`}>{children}</body>
+      <body className={`${dmSans.variable} ${spaceMono.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }

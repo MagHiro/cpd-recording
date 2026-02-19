@@ -75,7 +75,6 @@ export async function POST(req: NextRequest) {
     if (requestedVideoIds.length > 0) {
       const assigned = await assignCatalogVideosToEmail({
         email: owner.email,
-        requestId: parsed.requestId,
         videoIds: requestedVideoIds,
       });
       packages = assigned.packages.map((pkg) => ({

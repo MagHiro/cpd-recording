@@ -292,7 +292,6 @@ export interface IngestAssetInput {
 
 export interface IngestPayload {
   email: string;
-  requestId?: string;
   packageTitle: string;
   classCode?: string;
   classDate?: string;
@@ -306,10 +305,11 @@ export async function ingestPackage(payload: IngestPayload) {
   const now = nowIso();
 
   let packageId = newId();
-  if (payload.requestId) {
+  const classCode = payload.classCode?.trim();
+  if (classCode) {
     const existing = await db.query<{ id: string }>(
-      "SELECT id FROM vault_packages WHERE vault_id = $1 AND external_request_id = $2",
-      [owner.vaultId, payload.requestId],
+      "SELECT id FROM vault_packages WHERE vault_id = $1 AND class_code = $2 ORDER BY created_at DESC LIMIT 1",
+      [owner.vaultId, classCode],
     );
     if (existing.rows[0]) packageId = existing.rows[0].id;
   }
@@ -328,9 +328,9 @@ export async function ingestPackage(payload: IngestPayload) {
       [
         packageId,
         owner.vaultId,
-        payload.requestId ?? null,
+        null,
         payload.packageTitle,
-        payload.classCode ?? null,
+        classCode ?? null,
         payload.classDate ?? null,
         payload.classPrice ?? null,
         now,
@@ -814,7 +814,7 @@ export async function findCatalogVideosByIds(videoIds: string[]): Promise<Catalo
   return rows.rows.map(mapCatalogRow);
 }
 
-export async function assignCatalogVideosToEmail(params: { email: string; requestId?: string; videoIds: string[] }) {
+export async function assignCatalogVideosToEmail(params: { email: string; videoIds: string[] }) {
   const requested = Array.from(new Set(params.videoIds.map((id) => id.trim()).filter(Boolean)));
   const entries = await findCatalogVideosByIds(requested);
   const found = new Set(entries.map((e) => e.videoId));
@@ -826,7 +826,6 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
   for (const videoId of requested) {
     const entry = entryMap.get(videoId);
     const classCode = entry?.classCode ?? videoId;
-    const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${videoId}`;
 
     // Skip when this class/video is already provisioned for the same vault.
     const existingPackage = await db.query<{ id: string }>(
@@ -835,13 +834,11 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
        LEFT JOIN vault_assets a ON a.package_id = p.id
        WHERE p.vault_id = $1
          AND (
-           p.external_request_id = $2
-           OR p.external_request_id LIKE $3
-           OR p.class_code = $4
-           OR a.external_asset_id = $5
+           p.class_code = $2
+           OR a.external_asset_id = $3
          )
        LIMIT 1`,
-      [owner.vaultId, requestId, `%:${videoId}`, classCode, `${videoId}:video`],
+      [owner.vaultId, classCode, `${videoId}:video`],
     );
     if (existingPackage.rows[0]) {
       continue;
@@ -850,7 +847,6 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
     if (!entry) {
       const result = await ingestPackage({
         email: owner.email,
-        requestId,
         packageTitle: `${videoId} - Video Pending`,
         classCode: videoId,
         assets: [],
@@ -868,7 +864,6 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
 
     const result = await ingestPackage({
       email: owner.email,
-      requestId,
       packageTitle: `${entry.classCode} - ${entry.classTitle}`,
       classCode: entry.classCode,
       classDate: entry.classDate ?? undefined,
@@ -908,9 +903,10 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
 export async function syncCatalogEntryToExistingPackages(videoId: string): Promise<{ updatedPackages: number; upsertedAssets: number }> {
   const entry = (await findCatalogVideosByIds([videoId]))[0];
   if (!entry) return { updatedPackages: 0, upsertedAssets: 0 };
-  const pkgRows = await db.query<{ id: string }>("SELECT id FROM vault_packages WHERE external_request_id LIKE $1", [
-    `%:${entry.videoId}`,
-  ]);
+  const pkgRows = await db.query<{ id: string }>(
+    "SELECT id FROM vault_packages WHERE external_request_id LIKE $1 OR class_code = $2",
+    [`%:${entry.videoId}`, entry.classCode],
+  );
   if (pkgRows.rows.length === 0) return { updatedPackages: 0, upsertedAssets: 0 };
 
   const now = nowIso();

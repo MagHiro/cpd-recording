@@ -25,7 +25,6 @@ function parseMultiValueInput(input: string): string[] {
 
 export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: RegisteredUser[] }) {
   const [email, setEmail] = useState("");
-  const [requestId, setRequestId] = useState("");
   const [classCodes, setClassCodes] = useState("");
   const [videoIds, setVideoIds] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +66,6 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          requestId: requestId.trim() || undefined,
           classCodes: parseMultiValueInput(classCodes),
           videoIds: parseMultiValueInput(videoIds),
         }),
@@ -98,7 +96,6 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
           : (data.message ?? "User registered."),
       );
       setEmail("");
-      setRequestId("");
       setClassCodes("");
       setVideoIds("");
       await loadUsers();
@@ -207,12 +204,6 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-          />
-          <input
-            className="field md:col-span-2"
-            placeholder="Request ID (optional)"
-            value={requestId}
-            onChange={(event) => setRequestId(event.target.value)}
           />
           <input
             className="field min-h-5"

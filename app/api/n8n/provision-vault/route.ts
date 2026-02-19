@@ -73,7 +73,6 @@ export async function POST(req: NextRequest) {
 
       const result = await assignCatalogVideosToEmail({
         email: catalogAssignParsed.data.email,
-        requestId: catalogAssignParsed.data.requestId,
         videoIds,
       });
 
@@ -105,7 +104,6 @@ export async function POST(req: NextRequest) {
 
       const result = await ingestPackage({
         email: modernParsed.data.email,
-        requestId: modernParsed.data.requestId,
         packageTitle: modernParsed.data.packageTitle,
         assets,
       });
@@ -128,9 +126,9 @@ export async function POST(req: NextRequest) {
           error: "Invalid request payload.",
           details: {
             acceptedFormats: [
-              "catalog_assign: { email, requestId?, videoIds[] | videoId | video_ids[] }",
-              "direct_assets: { email, requestId?, packageTitle, recordings[], materials[] }",
-              "booked_class: { email, requestId?, booked_class[] }",
+              "catalog_assign: { email, videoIds[] | videoId | video_ids[] }",
+              "direct_assets: { email, packageTitle, recordings[], materials[] }",
+              "booked_class: { email, booked_class[] }",
             ],
             catalogAssignErrors: formatZodError(catalogAssignParsed.error),
             directAssetErrors: formatZodError(modernParsed.error),
@@ -165,14 +163,9 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const requestId =
-        item.requestId ??
-        `${bookedClassParsed.data.requestId ?? "booking"}:${item.class_information.class_code}:${item.class_information.id ?? "na"}`;
-
       const packageTitle = `${item.class_information.class_code} - ${item.title}`;
       const result = await ingestPackage({
         email: bookedClassParsed.data.email,
-        requestId,
         packageTitle,
         classCode: item.class_information.class_code,
         classDate: item.class_date,

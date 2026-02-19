@@ -19,7 +19,6 @@ export const adminLoginSchema = z.object({
 
 export const adminManualRegisterSchema = z.object({
   email: emailSchema,
-  requestId: z.string().min(1).optional(),
   classCodes: z
     .union([z.array(z.string()), z.string()])
     .optional()
@@ -71,14 +70,12 @@ const bookedClassItemSchema = z.object({
   class_information: bookedClassInformationSchema,
   title: z.string().min(1),
   class_date: z.string().min(1).optional(),
-  requestId: z.string().min(1).optional(),
   recordings: z.array(inboundAssetSchema).default([]),
   materials: z.array(inboundAssetSchema).default([]),
 });
 
 export const n8nIngestSchema = z.object({
   email: emailSchema,
-  requestId: z.string().min(1).optional(),
   packageTitle: z.string().min(1),
   recordings: z.array(inboundAssetSchema).default([]),
   materials: z.array(inboundAssetSchema).default([]),
@@ -86,13 +83,11 @@ export const n8nIngestSchema = z.object({
 
 export const n8nBookedClassIngestSchema = z.object({
   email: emailSchema,
-  requestId: z.string().min(1).optional(),
   booked_class: z.array(bookedClassItemSchema).min(1),
 });
 
 export const n8nCatalogAssignSchema = z.object({
   email: emailSchema,
-  requestId: z.string().min(1).optional(),
   videoIds: z.array(z.string().min(1)).min(1).optional(),
   videoId: z.string().min(1).optional(),
   video_ids: z.array(z.string().min(1)).min(1).optional(),

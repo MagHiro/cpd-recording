@@ -74,7 +74,6 @@ export async function POST(req: NextRequest) {
         if (videoIds.length > 0) {
           await assignCatalogVideosToEmail({
             email,
-            requestId: "bulk-csv",
             videoIds,
           });
           provisionedUsers += 1;

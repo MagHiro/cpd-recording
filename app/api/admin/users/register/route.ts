@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { requireAdminUser } from "@/lib/server/admin-auth";
-import { assignCatalogVideosToEmail, findUserByEmail, listRegisteredUsers, upsertUserAndVault } from "@/lib/server/db";
+import {
+  assignCatalogVideosToEmail,
+  deleteAllRegisteredUsers,
+  findUserByEmail,
+  listRegisteredUsers,
+  upsertUserAndVault,
+} from "@/lib/server/db";
 import { assertRateLimit } from "@/lib/server/rate-limit";
 import { adminManualRegisterSchema } from "@/lib/validators";
 
@@ -23,7 +29,10 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === "ADMIN_UNAUTHORIZED") {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
-    return NextResponse.json({ error: "Unexpected error." }, { status: 500 });
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Unexpected error." },
+      { status: 500 },
+    );
   }
 }
 
@@ -111,5 +120,33 @@ export async function POST(req: NextRequest) {
       { error: error instanceof Error ? error.message : "Invalid request." },
       { status: 400 },
     );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await requireAdminUser();
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const limit = assertRateLimit(`admin-users-delete-all:${ip}`, 3, 15 * 60 * 1000);
+    if (!limit.ok) {
+      return NextResponse.json({ error: "Too many delete attempts. Try again later." }, { status: 429 });
+    }
+
+    const body = (await req.json().catch(() => ({}))) as { confirm?: string };
+    if (body.confirm !== "DELETE_ALL_USERS") {
+      return NextResponse.json({ error: "Confirmation token is required." }, { status: 400 });
+    }
+
+    const deletedUsers = await deleteAllRegisteredUsers();
+    return NextResponse.json({
+      success: true,
+      deletedUsers,
+      message: `Deleted ${deletedUsers} user(s).`,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "ADMIN_UNAUTHORIZED") {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+    return NextResponse.json({ error: "Unexpected error." }, { status: 500 });
   }
 }

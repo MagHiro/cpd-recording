@@ -14,6 +14,18 @@ function safe(value: string | undefined): string {
   return (value ?? "").trim();
 }
 
+function normalizeHeader(value: string): string {
+  return value.replace(/^\ufeff/, "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function getByAliases(row: Record<string, string>, aliases: string[]): string {
+  const aliasSet = new Set(aliases.map(normalizeHeader));
+  for (const [key, value] of Object.entries(row)) {
+    if (aliasSet.has(normalizeHeader(key))) return value;
+  }
+  return "";
+}
+
 export async function POST(req: NextRequest) {
   try {
     await requireAdminUser();
@@ -33,8 +45,12 @@ export async function POST(req: NextRequest) {
     let skippedInvalid = 0;
 
     for (const row of rows) {
-      const email = safe(row.email).toLowerCase();
-      const classCode = safe(row.class_code);
+      const email = safe(
+        getByAliases(row, ["email", "email_address", "emailaddress", "attendee_email", "user_email"]),
+      ).toLowerCase();
+      const classCode = safe(
+        getByAliases(row, ["class_code", "classcode", "class", "video_id", "videoid"]),
+      );
       if (!email || !classCode || !isLikelyEmail(email)) {
         skippedInvalid += 1;
         continue;
@@ -58,7 +74,7 @@ export async function POST(req: NextRequest) {
         if (videoIds.length > 0) {
           await assignCatalogVideosToEmail({
             email,
-            requestId: `bulk-csv-${Date.now()}`,
+            requestId: "bulk-csv",
             videoIds,
           });
           provisionedUsers += 1;

@@ -31,10 +31,13 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
   const [loading, setLoading] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [importingCsv, setImportingCsv] = useState(false);
+  const [removingAllUsers, setRemovingAllUsers] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [removeAllMessage, setRemoveAllMessage] = useState<string | null>(null);
+  const [removeAllError, setRemoveAllError] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [users, setUsers] = useState<RegisteredUser[]>(initialUsers);
 
@@ -151,6 +154,38 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
     }
   }
 
+  async function removeAllUsers() {
+    const phrase = "DELETE ALL USERS";
+    const confirmation = window.prompt(`Type "${phrase}" to permanently remove all registered users.`);
+    if (confirmation !== phrase) {
+      setRemoveAllMessage(null);
+      setRemoveAllError("Bulk delete cancelled.");
+      return;
+    }
+
+    setRemovingAllUsers(true);
+    setRemoveAllMessage(null);
+    setRemoveAllError(null);
+
+    try {
+      const response = await fetch("/api/admin/users/register", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE_ALL_USERS" }),
+      });
+      const data = (await response.json()) as { error?: string; message?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Failed to remove users.");
+      }
+      setRemoveAllMessage(data.message ?? "All users removed.");
+      setUsers([]);
+    } catch (err) {
+      setRemoveAllError(err instanceof Error ? err.message : "Failed to remove users.");
+    } finally {
+      setRemovingAllUsers(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <section className="rounded-2xl border border-[#d8e1f5] bg-white p-4 shadow-sm">
@@ -256,13 +291,23 @@ export function AdminManualRegisterForm({ initialUsers = [] }: { initialUsers?: 
           </div>
           <button
             className="rounded-lg border border-[#d8e1f5] bg-white px-3 py-2 text-xs text-[#00194c] hover:border-[#f39c12]"
-            disabled={loadingUsers}
+            disabled={loadingUsers || removingAllUsers}
             onClick={() => void loadUsers()}
             type="button"
           >
             {loadingUsers ? "Refreshing..." : "Refresh"}
           </button>
+          <button
+            className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 hover:border-red-500 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={loadingUsers || removingAllUsers || users.length === 0}
+            onClick={() => void removeAllUsers()}
+            type="button"
+          >
+            {removingAllUsers ? "Removing..." : "Remove All Users"}
+          </button>
         </div>
+        {removeAllMessage ? <p className="mt-3 text-sm text-emerald-600">{removeAllMessage}</p> : null}
+        {removeAllError ? <p className="mt-3 text-sm text-red-600">{removeAllError}</p> : null}
 
         <div className="mt-3 overflow-x-auto">
           <table className="min-w-full text-left text-sm">

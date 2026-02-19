@@ -539,6 +539,31 @@ export async function listRegisteredUsers(limit = 200): Promise<
   }));
 }
 
+export async function deleteAllRegisteredUsers(): Promise<number> {
+  await initDb();
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Delete child rows explicitly so this works even on older schemas
+    // where ON DELETE CASCADE constraints may be missing.
+    await client.query("DELETE FROM login_codes WHERE user_id IN (SELECT id FROM users)");
+    await client.query("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users)");
+    await client.query("DELETE FROM vault_assets WHERE package_id IN (SELECT id FROM vault_packages)");
+    await client.query("DELETE FROM vault_packages WHERE vault_id IN (SELECT id FROM vaults)");
+    await client.query("DELETE FROM vaults WHERE user_id IN (SELECT id FROM users)");
+
+    const result = await client.query<{ id: string }>("DELETE FROM users RETURNING id");
+    await client.query("COMMIT");
+    return result.rowCount ?? result.rows.length;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function createLoginCode(userId: string, codeHash: string, expiresAtMs: number): Promise<void> {
   await initDb();
   const now = nowMs();
@@ -800,8 +825,29 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
   const packages = [];
   for (const videoId of requested) {
     const entry = entryMap.get(videoId);
+    const classCode = entry?.classCode ?? videoId;
+    const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${videoId}`;
+
+    // Skip when this class/video is already provisioned for the same vault.
+    const existingPackage = await db.query<{ id: string }>(
+      `SELECT DISTINCT p.id
+       FROM vault_packages p
+       LEFT JOIN vault_assets a ON a.package_id = p.id
+       WHERE p.vault_id = $1
+         AND (
+           p.external_request_id = $2
+           OR p.external_request_id LIKE $3
+           OR p.class_code = $4
+           OR a.external_asset_id = $5
+         )
+       LIMIT 1`,
+      [owner.vaultId, requestId, `%:${videoId}`, classCode, `${videoId}:video`],
+    );
+    if (existingPackage.rows[0]) {
+      continue;
+    }
+
     if (!entry) {
-      const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${videoId}`;
       const result = await ingestPackage({
         email: owner.email,
         requestId,
@@ -820,7 +866,6 @@ export async function assignCatalogVideosToEmail(params: { email: string; reques
       continue;
     }
 
-    const requestId = `${params.requestId ?? "catalog"}:${owner.email}:${entry.videoId}`;
     const result = await ingestPackage({
       email: owner.email,
       requestId,

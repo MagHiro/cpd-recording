@@ -65,6 +65,28 @@ npm run dev
 - Complete Google consent screen.
 - On success, refresh token is stored securely in app settings.
 
+## Docker
+
+Build and run the app with your existing `.env.local`:
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+If your database URL points at a database running on your host machine, do not use `localhost` inside `.env.local` for Docker. Use `host.docker.internal` instead, for example:
+
+```bash
+DATABASE_URL=postgresql://user:password@host.docker.internal:5432/database
+```
+
+For hosted databases such as Neon, keep the hosted connection string as-is.
+
 ## Security Model
 
 - Session cookie is `HttpOnly`, `SameSite=Lax`, `Secure` in production.

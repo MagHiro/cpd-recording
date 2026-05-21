@@ -539,6 +539,118 @@ export async function listRegisteredUsers(limit = 200): Promise<
   }));
 }
 
+export async function listUserVaultClasses(userId: string): Promise<
+  Array<{
+    packageId: string;
+    classCode: string | null;
+    title: string;
+    classDate: string | null;
+    assetCount: number;
+    videoCount: number;
+    createdAt: string;
+  }>
+> {
+  await initDb();
+  const rows = await db.query<{
+    packageid: string;
+    classcode: string | null;
+    title: string;
+    classdate: string | null;
+    assetcount: string | number;
+    videocount: string | number;
+    createdat: string;
+  }>(
+    `SELECT
+       p.id as packageId,
+       p.class_code as classCode,
+       p.title,
+       p.class_date as classDate,
+       COUNT(a.id) as assetCount,
+       COUNT(CASE WHEN a.type = 'VIDEO' THEN 1 END) as videoCount,
+       p.created_at as createdAt
+     FROM vault_packages p
+     JOIN vaults v ON v.id = p.vault_id
+     LEFT JOIN vault_assets a ON a.package_id = p.id
+     WHERE v.user_id = $1
+     GROUP BY p.id, p.class_code, p.title, p.class_date, p.created_at
+     ORDER BY COALESCE(p.class_code, p.title) ASC`,
+    [userId],
+  );
+
+  return rows.rows.map((row) => ({
+    packageId: row.packageid,
+    classCode: row.classcode,
+    title: row.title,
+    classDate: row.classdate,
+    assetCount: Number(row.assetcount ?? 0),
+    videoCount: Number(row.videocount ?? 0),
+    createdAt: row.createdat,
+  }));
+}
+
+export async function deleteUserVaultClass(params: { userId: string; packageId: string }): Promise<boolean> {
+  await initDb();
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const ownsPackage = await client.query<{ id: string }>(
+      `SELECT p.id
+       FROM vault_packages p
+       JOIN vaults v ON v.id = p.vault_id
+       WHERE p.id = $1 AND v.user_id = $2
+       LIMIT 1`,
+      [params.packageId, params.userId],
+    );
+    if (!ownsPackage.rows[0]) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    await client.query("DELETE FROM vault_assets WHERE package_id = $1", [params.packageId]);
+    await client.query("DELETE FROM vault_packages WHERE id = $1", [params.packageId]);
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function deleteRegisteredUser(userId: string): Promise<boolean> {
+  await initDb();
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    const exists = await client.query<{ id: string }>("SELECT id FROM users WHERE id = $1", [userId]);
+    if (!exists.rows[0]) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    await client.query("DELETE FROM login_codes WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
+    await client.query(
+      "DELETE FROM vault_assets WHERE package_id IN (SELECT p.id FROM vault_packages p JOIN vaults v ON v.id = p.vault_id WHERE v.user_id = $1)",
+      [userId],
+    );
+    await client.query(
+      "DELETE FROM vault_packages WHERE vault_id IN (SELECT id FROM vaults WHERE user_id = $1)",
+      [userId],
+    );
+    await client.query("DELETE FROM vaults WHERE user_id = $1", [userId]);
+    await client.query("DELETE FROM users WHERE id = $1", [userId]);
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function deleteAllRegisteredUsers(): Promise<number> {
   await initDb();
   const client = await db.connect();

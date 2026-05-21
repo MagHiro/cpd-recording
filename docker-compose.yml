@@ -8,8 +8,30 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      DATABASE_URL: postgresql://${DOCKER_POSTGRES_USER:-cpd_user}:${DOCKER_POSTGRES_PASSWORD:-change-this-postgres-password}@db:5432/${DOCKER_POSTGRES_DB:-neondb}
+      POSTGRES_URL: postgresql://${DOCKER_POSTGRES_USER:-cpd_user}:${DOCKER_POSTGRES_PASSWORD:-change-this-postgres-password}@db:5432/${DOCKER_POSTGRES_DB:-neondb}
+      POSTGRES_URL_NON_POOLING: postgresql://${DOCKER_POSTGRES_USER:-cpd_user}:${DOCKER_POSTGRES_PASSWORD:-change-this-postgres-password}@db:5432/${DOCKER_POSTGRES_DB:-neondb}
     ports:
-      - "3000:3000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DOCKER_POSTGRES_DB:-neondb}
+      POSTGRES_USER: ${DOCKER_POSTGRES_USER:-cpd_user}
+      POSTGRES_PASSWORD: ${DOCKER_POSTGRES_PASSWORD:-change-this-postgres-password}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

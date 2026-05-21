@@ -67,10 +67,33 @@ npm run dev
 
 ## Docker
 
-Build and run the app with your existing `.env.local`:
+The Docker Compose stack includes the app and a PostgreSQL container. The app
+still reads its admin, session, mail, n8n, and Google Drive configuration from
+`.env.local`; Compose overrides the database URLs so the app talks to the
+included `db` service.
+
+Set PostgreSQL credentials in the Compose project `.env` file before deploying
+to a server:
+
+```bash
+DOCKER_POSTGRES_DB=neondb
+DOCKER_POSTGRES_USER=cpd_user
+DOCKER_POSTGRES_PASSWORD=replace-with-a-long-password
+```
+
+Use URL-safe characters for `DOCKER_POSTGRES_PASSWORD`, because Compose inserts
+it into the app database URL.
+
+Build and run the stack:
 
 ```bash
 docker compose up --build
+```
+
+To publish the app on another host port, set `APP_PORT`, for example:
+
+```bash
+APP_PORT=8080 docker compose up --build
 ```
 
 Then open:
@@ -79,13 +102,18 @@ Then open:
 http://localhost:3000
 ```
 
-If your database URL points at a database running on your host machine, do not use `localhost` inside `.env.local` for Docker. Use `host.docker.internal` instead, for example:
+PostgreSQL data persists in the `postgres_data` Docker volume. To stop the
+containers without deleting data:
 
 ```bash
-DATABASE_URL=postgresql://user:password@host.docker.internal:5432/database
+docker compose down
 ```
 
-For hosted databases such as Neon, keep the hosted connection string as-is.
+To remove the Compose database volume too:
+
+```bash
+docker compose down -v
+```
 
 ## Security Model
 
